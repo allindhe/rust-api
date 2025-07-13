@@ -32,3 +32,24 @@ impl TryFrom<DogRequest> for Dog {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn deserialize_json_to_dogrequest_and_convert_to_dog() {
+        let json_data = json!({
+            "owner": "507f1f77bcf86cd799439011",
+            "name": "Max",
+            "age": 5,
+        });
+        let dog_request: DogRequest = serde_json::from_value(json_data).unwrap();
+        let dog = Dog::try_from(dog_request).unwrap();
+        assert_eq!(dog.name, Some("Max".to_string()));
+        assert_eq!(dog.age, Some(5));
+        assert_eq!(dog.breed, None);
+        assert_eq!(dog.owner.to_string(), "507f1f77bcf86cd799439011");
+    }
+}

@@ -22,18 +22,22 @@ pub struct Database {
 }
 
 impl Database {
-    pub async fn init() -> Self {
+    pub async fn init(db_name: &str, clean_db: bool) -> Self {
         let uri = match std::env::var("MONGO_URI") {
             Ok(v) => v.to_string(),
             Err(_) => panic!("No MONGO_URI set up."),
         };
 
         let client = Client::with_uri_str(uri).await.unwrap();
-        let db = client.database("dog_walking");
+        let db = client.database(db_name);
 
         let booking = db.collection("booking");
         let dog = db.collection("dog");
         let owner = db.collection("owner");
+
+        if clean_db {
+            db.drop().await.unwrap();
+        }
 
         Database {
             booking,
@@ -173,5 +177,33 @@ impl Database {
         let booking: FullBooking = from_document(doc)?;
 
         Ok(booking)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::models::owner_model::OwnerRequest;
+
+    use super::*;
+
+    async fn setup_db() -> Database {
+        Database::init("dog_walking_test", true).await
+    }
+
+    #[actix_web::test]
+    async fn test_create_booking() {
+        let db = setup_db().await;
+        let owner = Owner::try_from(OwnerRequest {
+            name: "Name".to_string(),
+            email: "test@example.com".to_string(),
+            phone: "0001112233".to_string(),
+            address: "1337 Whoville, Texas".to_string(),
+        })
+        .unwrap();
+
+        match db.create_owner(owner).await {
+            Ok(_) => assert!(true),
+            Err(_) => assert!(false),
+        };
     }
 }

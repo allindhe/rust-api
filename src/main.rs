@@ -20,7 +20,7 @@ async fn hello() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let db = Database::init().await;
+    let db = Database::init("dog_walking", false).await;
     let db_data = Data::new(db);
 
     HttpServer::new(move || {
